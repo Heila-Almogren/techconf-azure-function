@@ -1,71 +1,39 @@
-# TechConf Registration Website
+## This folder will contains the Azure function code.
 
-## Project Overview
-The TechConf website allows attendees to register for an upcoming conference. Administrators can also view the list of attendees and notify all attendees via a personalized email message.
+## Note:
 
-The application is currently working but the following pain points have triggered the need for migration to Azure:
- - The web application is not scalable to handle user load at peak
- - When the admin sends out notifications, it's currently taking a long time because it's looping through all attendees, resulting in some HTTP timeout exceptions
- - The current architecture is not cost-effective 
+- Before deploying, be sure to update your requirements.txt file by running `pip freeze > requirements.txt`
+- Known issue, the python package `psycopg2` does not work directly in Azure; install `psycopg2-binary` instead to use the `psycopg2` library in Azure
 
-In this project, you are tasked to do the following:
-- Migrate and deploy the pre-existing web app to an Azure App Service
-- Migrate a PostgreSQL database backup to an Azure Postgres database instance
-- Refactor the notification logic to an Azure Function via a service bus queue message
+The skelton of the `__init__.py` file will consist of the following logic:
 
-## Dependencies
+```
+import logging
+import azure.functions as func
+import psycopg2
+import os
+from datetime import datetime
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
-You will need to install the following locally:
-- [Postgres](https://www.postgresql.org/download/)
-- [Visual Studio Code](https://code.visualstudio.com/download)
-- [Azure Function tools V3](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=windows%2Ccsharp%2Cbash#install-the-azure-functions-core-tools)
-- [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
-- [Azure Tools for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-node-azure-pack)
+def main(msg: func.ServiceBusMessage):
 
-## Project Instructions
+    notification_id = int(msg.get_body().decode('utf-8'))
+    logging.info('Python ServiceBus queue trigger processed message: %s',notification_id)
 
-### Part 1: Create Azure Resources and Deploy Web App
-1. Create a Resource group
-2. Create an Azure Postgres Database single server
-   - Add a new database `techconfdb`
-   - Allow all IPs to connect to database server
-   - Restore the database with the backup located in the data folder
-3. Create a Service Bus resource with a `notificationqueue` that will be used to communicate between the web and the function
-   - Open the web folder and update the following in the `config.py` file
-      - `POSTGRES_URL`
-      - `POSTGRES_USER`
-      - `POSTGRES_PW`
-      - `POSTGRES_DB`
-      - `SERVICE_BUS_CONNECTION_STRING`
-4. Create App Service plan
-5. Create a storage account
-6. Deploy the web app
+    # TODO: Get connection to database
 
-### Part 2: Create and Publish Azure Function
-1. Create an Azure Function in the `function` folder that is triggered by the service bus queue created in Part 1.
+    try:
+        # TODO: Get notification message and subject from database using the notification_id
 
-      **Note**: Skeleton code has been provided in the **README** file located in the `function` folder. You will need to copy/paste this code into the `__init.py__` file in the `function` folder.
-      - The Azure Function should do the following:
-         - Process the message which is the `notification_id`
-         - Query the database using `psycopg2` library for the given notification to retrieve the subject and message
-         - Query the database to retrieve a list of attendees (**email** and **first name**)
-         - Loop through each attendee and send a personalized subject message
-         - After the notification, update the notification status with the total number of attendees notified
-2. Publish the Azure Function
+        # TODO: Get attendees email and name
 
-### Part 3: Refactor `routes.py`
-1. Refactor the post logic in `web/app/routes.py -> notification()` using servicebus `queue_client`:
-   - The notification method on POST should save the notification object and queue the notification id for the function to pick it up
-2. Re-deploy the web app to publish changes
+        # TODO: Loop through each attendee and send an email with a personalized subject
 
-## Monthly Cost Analysis
-Complete a month cost analysis of each Azure resource to give an estimate total cost using the table below:
+        # TODO: Update the notification table by setting the completed date and updating the status with the total number of attendees notified
 
-| Azure Resource | Service Tier | Monthly Cost |
-| ------------ | ------------ | ------------ |
-| *Azure Postgres Database* |     |              |
-| *Azure Service Bus*   |         |              |
-| ...                   |         |              |
-
-## Architecture Explanation
-This is a placeholder section where you can provide an explanation and reasoning for your architecture selection for both the Azure Web App and Azure Function.
+    except (Exception, psycopg2.DatabaseError) as error:
+        logging.error(error)
+    finally:
+        # TODO: Close connection
+```
